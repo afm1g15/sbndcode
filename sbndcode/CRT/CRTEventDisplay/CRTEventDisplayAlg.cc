@@ -1,4 +1,9 @@
 #include "CRTEventDisplayAlg.h"
+#include "lardataobj/AnalysisBase/T0.h"
+#include "canvas/Persistency/Common/FindManyP.h"
+#include "lardataobj/RecoBase/Track.h"
+#include "TH1D.h"
+#include "TPaveText.h"
 
 namespace sbnd::crt {
   
@@ -23,6 +28,7 @@ namespace sbnd::crt {
     fClusterLabel = config.ClusterLabel();
     fSpacePointLabel = config.SpacePointLabel();
     fTrackLabel = config.TrackLabel();
+    fTrackMatchLabel = config.TrackMatchLabel();
 
     fSaveRoot = config.SaveRoot();
     fSaveViews = config.SaveViews();
@@ -150,6 +156,10 @@ namespace sbnd::crt {
 
     // Create a canvas 
     TCanvas *c1 = new TCanvas("c1","",700,700);
+
+    //Create a second canvas and a histogram
+    //TCanvas *c2 = new TCanvas("c2","",700,700);
+    //TH1D *h_matchingConfidence   = new TH1D("h_matchingConfidence","",150,0,150);
     
     std::vector<double> crtLims = fCRTGeoAlg.CRTLimits();
     crtLims[0] -= 100; crtLims[1] -= 100; crtLims[2] -= 100;
@@ -464,19 +474,76 @@ namespace sbnd::crt {
                     const geo::Point_t pos = spacepoint->Pos();
                     const geo::Point_t err = spacepoint->Err();
 
+                    try {
+                      auto spacePointsHandle = event.getValidHandle<std::vector<CRTSpacePoint>>(fSpacePointLabel);
+
+                      art::FindOneP<recob::Track, anab::T0> CRTSPstoTPCTracks(spacePointsHandle, event, "crtspacepointmatching");
+                      const art::Ptr<recob::Track> TPCTrack = CRTSPstoTPCTracks.at(spacepoint.key());
+                      if(TPCTrack.isNonnull()) {
+                        const anab::T0 t0Match = CRTSPstoTPCTracks.data(spacepoint.key()).ref();
+                        std::cout << "t0 SP match (confidence) = " << t0Match.TriggerConfidence() << std::endl;
+                        double t0SPMatchConfidence = t0Match.TriggerConfidence();
+
+                        const geo::Point_t startTPC = TPCTrack->Start();
+                        const geo::Vector_t dirTPC  = TPCTrack->StartDirection();
+
+                        TPolyLine3D *lineTPC = new TPolyLine3D(2);
+                        geo::Point_t aTPC {0,0,0};
+                        geo::Point_t bTPC {0,0,0};
+
+                        int i = 0;
+                        do
+                          {
+                            aTPC = startTPC + i * dirTPC;
+                            ++i;
+                          }
+                        while(IsPointInsideBox(crtLims, aTPC));
+
+                        i = 0;
+                        do
+                          {
+                            bTPC = startTPC + i * dirTPC;
+                            --i;
+                          }
+                          while(IsPointInsideBox(crtLims, bTPC));
+
+                          lineTPC->SetPoint(0, aTPC.X(), aTPC.Y(), aTPC.Z());
+                          lineTPC->SetPoint(1, bTPC.X(), bTPC.Y(), bTPC.Z());
+
+                          lineTPC->SetLineColor(3);
+                          lineTPC->SetLineWidth(fLineWidth);
+                          lineTPC->Draw();
+
+                          TPaveText *pt = new TPaveText(0.05,0.85,0.35,0.65,"NB");
+                          pt->SetTextSize(0.02);
+                          pt->SetFillStyle(0);
+                          pt->SetLineStyle(0);
+                          pt->SetTextAlign(12);
+                          pt->SetBorderSize(0);
+                          pt->AddText(Form("t0SPMatchConfidence=%g", t0SPMatchConfidence));
+                          pt->Draw();
+
+                      }
+                      else {
+                        continue;
+                      }
+                    } catch(...) {
+                      continue;
+                    }  
+
                     double rmin[3] = {pos.X() - err.X(), pos.Y() - err.Y(), pos.Z() - err.Z()};
                     double rmax[3] = {pos.X() + err.X(), pos.Y() + err.Y(), pos.Z() + err.Z()};
 
                     DrawCube(c1, rmin, rmax, fSpacePointColour);
 
-                    if(fPrint)
-                      std::cout << "Space Point: (" 
-                                << rmin[0] << ", " << rmin[1] << ", " << rmin[2] << ") --> ("
-                                << rmax[0] << ", " << rmax[1] << ", " << rmax[2] << ") at t0 = "
-                                << spacepoint->Ts0() << " (" << spacepoint->Ts0() - G4RefTime << ") or t1 = "
-                                << spacepoint->Ts1() << " (" << spacepoint->Ts1() - G4RefTime << ")"
-                                << " with PE " << spacepoint->PE()
-                                << std::endl;
+                    //if(fPrint)
+                      //std::cout << "Space Point: (" 
+                      //          << rmin[0] << ", " << rmin[1] << ", " << rmin[2] << ") --> ("
+                      //          << rmax[0] << ", " << rmax[1] << ", " << rmax[2] << ") at t0 = "
+                       //         << spacepoint->Ts0() << " (" << spacepoint->Ts0() - G4RefTime << ") or t1 = "
+                         //       << spacepoint->Ts1() << " (" << spacepoint->Ts1() - G4RefTime << ")"
+                       //         << " with PE " << spacepoint->PE()
+                       //         << std::endl;
                   }
                 else if(spacePointVec.size() != 0)
                   std::cout << "What an earth is going on here then..." << std::endl;
@@ -489,6 +556,9 @@ namespace sbnd::crt {
         auto tracksHandle = event.getValidHandle<std::vector<CRTTrack>>(fTrackLabel);
         std::vector<art::Ptr<CRTTrack>> tracksVec;
         art::fill_ptr_vector(tracksVec, tracksHandle);
+
+        art::FindOneP<recob::Track, anab::T0> CRTTrackstoTPCTracks(tracksHandle, event, "crttrackmatching");  //fTrackMatchLabel
+        
 
         for(auto track : tracksVec)
           {
@@ -511,6 +581,58 @@ namespace sbnd::crt {
 
             const geo::Point_t start = track->Start();
             const geo::Vector_t dir  = track->Direction();
+
+            //double t0MatchConfidence = 0;
+
+            const art::Ptr<recob::Track> TPCTrack = CRTTrackstoTPCTracks.at(track.key());
+            if(TPCTrack.isNonnull()) {
+              const anab::T0 t0Match = CRTTrackstoTPCTracks.data(track.key()).ref();
+              std::cout << "t0 match (confidence) = " << t0Match.TriggerConfidence() << std::endl;
+              double t0MatchConfidence = t0Match.TriggerConfidence();
+              //h_matchingConfidence->Fill(t0Match.TriggerConfidence());
+    
+              const geo::Point_t startTPC = TPCTrack->Start();
+              const geo::Vector_t dirTPC  = TPCTrack->StartDirection();
+
+              TPolyLine3D *lineTPC = new TPolyLine3D(2);
+              geo::Point_t aTPC {0,0,0};
+              geo::Point_t bTPC {0,0,0};
+
+              int i = 0;
+              do
+                {
+                  aTPC = startTPC + i * dirTPC;
+                  ++i;
+                }
+              while(IsPointInsideBox(crtLims, aTPC));
+
+              i = 0;
+              do
+                {
+                  bTPC = startTPC + i * dirTPC;
+                  --i;
+                }
+              while(IsPointInsideBox(crtLims, bTPC));
+
+              lineTPC->SetPoint(0, aTPC.X(), aTPC.Y(), aTPC.Z());
+              lineTPC->SetPoint(1, bTPC.X(), bTPC.Y(), bTPC.Z());
+
+              lineTPC->SetLineColor(2);
+              lineTPC->SetLineWidth(fLineWidth);
+              lineTPC->Draw();
+
+              TPaveText *pt = new TPaveText(0.05,0.8,0.35,0.6,"NB");
+              pt->SetTextSize(0.02);
+              pt->SetFillStyle(0);
+              pt->SetLineStyle(0);
+              pt->SetTextAlign(12);
+              pt->SetBorderSize(0);
+              pt->AddText(Form("t0MatchConfidence=%g", t0MatchConfidence));
+              pt->Draw();
+            }
+            else {
+              continue;
+            }
 
             TPolyLine3D *line = new TPolyLine3D(2);
             geo::Point_t a {0,0,0};
@@ -539,18 +661,19 @@ namespace sbnd::crt {
             line->SetLineWidth(fLineWidth);
             line->Draw();
 
-            if(fPrint)
-              std::cout << "Track at (" << start.X() << ", " << start.Y() << ", " << start.Z() << ")\n"
-                        << "\twith direction (" << dir.X() << ", " << dir.Y() << ", " << dir.Z() << ")\n"
-                        << "\tdrawn between (" << a.X() << ", " << a.Y() << ", " << a.Z() << ")\n"
-                        << "\tand (" << b.X() << ", " << b.Y() << ", " << b.Z() << ")\n"
-                        << "\tat ts0 " << track->Ts0() << " (" << track->Ts0() - G4RefTime << ")\n"
-                        << "\tat ts1 " << track->Ts1() << " (" << track->Ts1() - G4RefTime << ")\n"
-                        << "\tfrom three hits? " << track->Triple() << std::endl;
+            //if(fPrint)
+             // std::cout << "Track at (" << start.X() << ", " << start.Y() << ", " << start.Z() << ")\n"
+             //           << "\twith direction (" << dir.X() << ", " << dir.Y() << ", " << dir.Z() << ")\n"
+             //           << "\tdrawn between (" << a.X() << ", " << a.Y() << ", " << a.Z() << ")\n"
+             //           << "\tand (" << b.X() << ", " << b.Y() << ", " << b.Z() << ")\n"
+             //           << "\tat ts0 " << track->Ts0() << " (" << track->Ts0() - G4RefTime << ")\n"
+             //           << "\tat ts1 " << track->Ts1() << " (" << track->Ts1() - G4RefTime << ")\n"
+             //           << "\tfrom three hits? " << track->Triple() << std::endl;
 
           }
       }
 
+    std::cout << Form("%s", saveName.Data()) << std::endl;
     if(fSaveRoot)
       c1->SaveAs(Form("%s.root", saveName.Data()));
 
@@ -630,6 +753,14 @@ namespace sbnd::crt {
         c1->SaveAs(Form("%s_side.png", saveName.Data()));
         c1->SaveAs(Form("%s_side.pdf", saveName.Data()));
       }
+    
+    //SetHistogramStyle1D(h_true_background_pdg,"PDG Code", "Rate");
+    //h_matchingConfidence->Draw("hist");
+    //h_matchingConfidence->SetLineWidth(3);
+    //h_matchingConfidence->SetLineColor(kTeal-5);
+    //h_matchingConfidence->GetYaxis()->SetTitleOffset(0.95);
+    //c2->SaveAs(("matchingConfidence.pdf"));
+    //c2->Clear();
 
     delete c1;
   }
