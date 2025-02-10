@@ -588,6 +588,7 @@ namespace sbnd::crt {
             if(TPCTrack.isNonnull()) {
               const anab::T0 t0Match = CRTTrackstoTPCTracks.data(track.key()).ref();
               std::cout << "t0 match (confidence) = " << t0Match.TriggerConfidence() << std::endl;
+              std::cout << "t0 time = " << t0Match.Time() << std::endl;
               double t0MatchConfidence = t0Match.TriggerConfidence();
               //h_matchingConfidence->Fill(t0Match.TriggerConfidence());
     
@@ -661,14 +662,14 @@ namespace sbnd::crt {
             line->SetLineWidth(fLineWidth);
             line->Draw();
 
-            //if(fPrint)
-             // std::cout << "Track at (" << start.X() << ", " << start.Y() << ", " << start.Z() << ")\n"
-             //           << "\twith direction (" << dir.X() << ", " << dir.Y() << ", " << dir.Z() << ")\n"
-             //           << "\tdrawn between (" << a.X() << ", " << a.Y() << ", " << a.Z() << ")\n"
-             //           << "\tand (" << b.X() << ", " << b.Y() << ", " << b.Z() << ")\n"
-             //           << "\tat ts0 " << track->Ts0() << " (" << track->Ts0() - G4RefTime << ")\n"
-             //           << "\tat ts1 " << track->Ts1() << " (" << track->Ts1() - G4RefTime << ")\n"
-             //           << "\tfrom three hits? " << track->Triple() << std::endl;
+            if(fPrint)
+              std::cout << "Track at (" << start.X() << ", " << start.Y() << ", " << start.Z() << ")\n"
+                        << "\twith direction (" << dir.X() << ", " << dir.Y() << ", " << dir.Z() << ")\n"
+                        << "\tdrawn between (" << a.X() << ", " << a.Y() << ", " << a.Z() << ")\n"
+                        << "\tand (" << b.X() << ", " << b.Y() << ", " << b.Z() << ")\n"
+                        << "\tat ts0 " << track->Ts0() << " (" << track->Ts0() - G4RefTime << ")\n"
+                        << "\tat ts1 " << track->Ts1() << " (" << track->Ts1() - G4RefTime << ")\n"
+                        << "\tfrom three hits? " << track->Triple() << std::endl;
 
           }
       }
