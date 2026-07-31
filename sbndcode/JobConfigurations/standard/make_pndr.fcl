@@ -1,0 +1,15 @@
+#include "standard_reco2_sbnd.fcl"
+
+physics.reco2:  [ rns, pandora ]
+physics.end_paths:      [  ]
+
+physics.producers.pandora.ConfigFile: "PandoraSettings_Master_SBND.xml"
+physics.producers.pandora.EnableMCParticles: true
+
+services.SpaceCharge.EnableCalEfieldSCE: false
+services.SpaceCharge.EnableCalSpatialSCE: false
+services.SpaceCharge.EnableCorrSCE: false
+services.SpaceCharge.EnableSimEfieldSCE: false
+services.SpaceCharge.EnableSimSpatialSCE: false
+services.SpaceCharge.is2DdriftSimHack: false
+

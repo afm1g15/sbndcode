@@ -1,0 +1,33 @@
+BEGIN_PROLOG
+
+analyzer_params:
+{
+    module_type:        "SCEDLVertexAnalyzer"
+
+    POTSummaryLabel: "generator"
+    MCTruthLabel: "generator"
+    MCParticleLabel: "largeant"
+
+    # Reco labels
+    RecoSlicesLabel: "pandora"
+    RecoPFParticleLabel: "pandora"
+    RecoPFParticleMetadataLabel: "pandora"
+    RecoTrackLabel: "pandoraTrack"
+    RecoTrackHitsLabel: "pandoraTrack"
+    RecoShowerLabel: "pandoraShower"
+    RecoVertexLabel: "pandora"
+    RecoCaloLabel: "pandoraCalo"
+    RecoOpT0FinderLabel: "opt0finder"
+    RecoPIDLabel: "pandoraPid"
+    MCTruthMatchingLabel: "gausHitTruthMatch"
+    RecoAllHits: "gaushit"
+    RecoClusterLabel: "pandora"
+
+    selected_plane: 2                                   # 0: U, 1: V, 2: Y
+    plane_selection: 1                         # 0 FIXED, 1 NUM_CAL_POINTS, 2 KINETIC_ENERGY, 3 RANGE
+    debug_generator: false
+    debug_g4: false
+    debug_reco: false
+}
+
+END_PROLOG	

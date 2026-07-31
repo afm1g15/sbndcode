@@ -1,6 +1,6 @@
 <pandora>
   <!-- GLOBAL SETTINGS -->
-  <IsMonitoringEnabled>false</IsMonitoringEnabled>
+  <IsMonitoringEnabled>true</IsMonitoringEnabled>
   <ShouldDisplayAlgorithmInfo>false</ShouldDisplayAlgorithmInfo>
   <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
@@ -12,12 +12,12 @@
     <FilteredCaloHitListName>CaloHitList2D</FilteredCaloHitListName>
     <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
   </algorithm>
-  <algorithm type = "LArVisualMonitoring">
+  <!--algorithm type = "LArVisualMonitoring">
     <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW</CaloHitListNames>
     <ShowDetector>true</ShowDetector>
-  </algorithm>
+  </algorithm-->
 
-  <algorithm type = "LArMaster">
+  <algorithm type = "LArDLMaster">
     <CRSettingsFile>PandoraSettings_Cosmic_SBND.xml</CRSettingsFile>
     <NuSettingsFile>PandoraSettings_Neutrino_SBND.xml</NuSettingsFile>
     <SlicingSettingsFile>PandoraSettings_Slicing_Standard.xml</SlicingSettingsFile>
@@ -38,15 +38,25 @@
         <PersistFeatures>true</PersistFeatures>
       </tool>
     </SliceIdTools>
-    <InputHitListName>CaloHitList2D</InputHitListName>
-    <RecreatedPfoListName>RecreatedPfos</RecreatedPfoListName>
-    <RecreatedClusterListName>RecreatedClusters</RecreatedClusterListName>
-    <RecreatedVertexListName>RecreatedVertices</RecreatedVertexListName>
-    <VisualizeOverallRecoStatus>false</VisualizeOverallRecoStatus>
+      <InputHitListName>CaloHitList2D</InputHitListName>
+      <InputMCParticleListName>Input</InputMCParticleListName>
+      <PassMCParticlesToWorkerInstances>true</PassMCParticlesToWorkerInstances>
+      <RecreatedPfoListName>RecreatedPfos</RecreatedPfoListName>
+      <RecreatedClusterListName>RecreatedClusters</RecreatedClusterListName>
+      <RecreatedVertexListName>RecreatedVertices</RecreatedVertexListName>
+      <VisualizeOverallRecoStatus>false</VisualizeOverallRecoStatus>
+      <LArCaloHitVersion>2</LArCaloHitVersion>
   </algorithm>
 
-  <algorithm type = "LArVisualMonitoring">
+  <!--<algorithm type = "LArVertexMonitoring">
+      <WriteFile>true</WriteFile>
+      <Filename>testingvertices.root</Filename>
+      <Treename>vertices</Treename>
+      <Visualize>false</Visualize>
+  </algorithm>-->
+
+  <!--algorithm type = "LArVisualMonitoring">
     <ShowCurrentPfos>true</ShowCurrentPfos>
     <ShowDetector>true</ShowDetector>
-  </algorithm>
+  </algorithm-->
 </pandora>

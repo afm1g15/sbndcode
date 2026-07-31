@@ -1,0 +1,7 @@
+#include "standard_reco2_sbnd.fcl"
+
+physics.reco2:  [ rns, pandora ]
+physics.end_paths:      [ stream1 ]
+
+physics.producers.pandora.ConfigFile: "PandoraSettings_Master_SBND.xml"
+physics.producers.pandora.EnableMCParticles: true
